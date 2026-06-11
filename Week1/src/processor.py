@@ -2,68 +2,52 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
-# Define required fields for validation
-REQUIRED_FIELDS = ["source_id", "title", "company", "description"]
+# define required fields for validation
+REQUIRED_FIELDS = ["source_id", "job_title", "company", "description"]
+
+# define Pydantic model for job listing
 class JobListing(BaseModel):
     source_id: str
-    url: str
-    title: str
+    job_title: str
     company: str
-    location: str = ""
-    work_type: str = ""
-    classification: str = ""
-    rating: str = ""
     description: str
 
-# Functions to load HTML and encode it into a BeautifulSoup object
+# functions to load HTML into Beautiful Soup
 def load_html(html_file: Path) -> BeautifulSoup:
     return BeautifulSoup(html_file.read_text(encoding="utf-8"), "html.parser")
 
-# Helper functions to extract specific data points from the HTML
-def get_text_by_automation(soup: BeautifulSoup, value: str) -> str:
+# helper functions to extract data from HTML
+def extract_data(soup: BeautifulSoup, value: str) -> str:
     tag = soup.find(attrs={"data-automation": value})
     return tag.get_text(strip=True) if tag else ""
 
-# Function to extract meta content by property
+# helper function to extract meta content
 def get_meta_content(soup: BeautifulSoup, property: str) -> str:
     tag = soup.find("meta", property=property)
     return tag["content"] if tag and tag.get("content") else ""
 
-# Functions to extract rating which have more complex logic
-def extract_rating(soup: BeautifulSoup) -> str:
-    tag = soup.find(attrs={"data-automation": "company-review"})
-    if tag:
-        span = tag.find("span", attrs={"aria-hidden": "true"})
-        return span.get_text(strip=True) if span else ""
-    return ""
-
-# Function to extract job description with proper whitespace handling
+# helper function to extract job description
 def extract_description(soup: BeautifulSoup) -> str:
     tag = soup.find(attrs={"data-automation": "jobAdDetails"})
     return " ".join(tag.get_text(separator=" ").split()) if tag else ""
 
-# Main function to parse job data from BeautifulSoup object
+# main functions to process HTML and save as JSON
 def parse_job(soup: BeautifulSoup) -> dict:
     url = get_meta_content(soup, "og:url")
     return {
         "source_id": url.rstrip("/").split("/")[-1],
-        "url": url,
-        "title": get_text_by_automation(soup, "job-detail-title"),
-        "company": get_text_by_automation(soup, "advertiser-name"),
-        "location": get_text_by_automation(soup, "job-detail-location"),
-        "work_type": get_text_by_automation(soup, "job-detail-work-type"),
-        "classification": get_text_by_automation(soup, "job-detail-classifications"),
-        "rating": extract_rating(soup),
+        "job_title": extract_data(soup, "job-detail-title"),
+        "company": extract_data(soup, "advertiser-name"),
         "description": extract_description(soup),
     }
 
-# Function to validate that all required fields are present in the job data
+# validation function to check for missing fields
 def validate_job(job_data: dict, filename: str) -> bool:
     missing = [f for f in REQUIRED_FIELDS if not job_data.get(f)]
     [print(f"⚠️ Missing {f} in: {filename}") for f in missing]
     return not missing
 
-
+# main function to process all HTML files in bronze and save as JSON in silver
 def process_all_html(bronze_dir: Path, silver_dir: Path) -> None:
     silver_dir.mkdir(parents=True, exist_ok=True)
 
@@ -92,7 +76,7 @@ def process_all_html(bronze_dir: Path, silver_dir: Path) -> None:
 
     print(f"\n📊 Silver Summary: Total: {total} | Processed: {processed} | Skipped: {skipped}")
 
-
+# test code to verify parsing logic
 if __name__ == "__main__":
     test_file = Path("data/1_bronze/your_file.html")
     soup = load_html(test_file)
