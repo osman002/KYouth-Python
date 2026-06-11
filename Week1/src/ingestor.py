@@ -1,11 +1,12 @@
 from pathlib import Path
 import email
+from email.message import Message
 
-def load_mhtml(mhtml_file: Path) -> email.message.Message:
+def load_mhtml(mhtml_file: Path) -> Message:
     with open(mhtml_file, "rb") as f:
         return email.message_from_bytes(f.read())
 
-def extract_html(msg: email.message.Message) -> str:
+def extract_html(msg: Message) -> str:
     for part in msg.walk():
         if part.get_content_type() == "text/html":
             payload = part.get_payload(decode=True)
