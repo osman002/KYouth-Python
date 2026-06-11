@@ -40,7 +40,7 @@ def load_all_jsons(silver_dir: Path, gold_dir: Path) -> None:
                     VALUES (?, ?, ?, ?)
                 """, (
                     data.get("source_id"),
-                    data.get("title"),
+                    data.get("job_title"),
                     data.get("company"),
                     data.get("description"),
                 ))
