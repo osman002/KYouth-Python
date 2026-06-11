@@ -3,6 +3,7 @@ from pathlib import Path
 from src.ingestor import ingest_all_mhtml
 from src.processor import process_all_html
 from src.loader import load_all_jsons
+from src.profiler import run_data_profile
 
 SOURCE_DIR = Path("data/0_source")
 BRONZE_DIR = Path("data/1_bronze")
@@ -25,6 +26,10 @@ def run_gold():
     output_dir = GOLD_DIR
     load_all_jsons(input_dir, output_dir)
 
+def run_profiler():
+    db_path = GOLD_DIR/DB_NAME
+    run_data_profile(db_path)
+
 def main():
     print("Hello from learning!")
 
@@ -36,5 +41,12 @@ if __name__ == "__main__":
             run_silver()
         case "load":
             run_gold()
+        case "profile":
+            run_profiler()
+        case "all":
+            run_bronze()
+            run_silver()
+            run_gold()
+            run_profiler()
         case _:
-            print("Unknown command. Available commands: ingest")
+            print("Unknown command. Available commands: ingest, process, load, profile, all")
